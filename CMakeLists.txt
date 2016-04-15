@@ -147,8 +147,14 @@ if(WITH_NETWORK_BACKEND)
 		set(LIBS_TO_LINK ${LIBS_TO_LINK} wsock32 ws2_32)
 	endif()
 
+	include(CheckCSourceCompiles)
+	check_c_source_compiles("#include <unistd.h>\nint main(void) { int fd[2]; return pipe2(fd, 0); }" HAS_PIPE2)
+
+	if (HAS_PIPE2)
+		add_definitions(-DHAS_PIPE2=1)
+	endif(HAS_PIPE2)
+
 	if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-		include(CheckCSourceCompiles)
 		set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE=1")
 		check_c_source_compiles("#include <fcntl.h>\nint main(void) { return O_TMPFILE; }" HAS_O_TMPFILE)
 
@@ -156,9 +162,19 @@ if(WITH_NETWORK_BACKEND)
 			option(WITH_NETWORK_GET_BUFFER "Enable experimental zero-copy transfers" OFF)
 
 			if (WITH_NETWORK_GET_BUFFER)
-				add_definitions(-D_GNU_SOURCE=1 -DWITH_NETWORK_GET_BUFFER=1)
+				add_definitions(-DWITH_NETWORK_GET_BUFFER=1)
 			endif(WITH_NETWORK_GET_BUFFER)
 		endif(HAS_O_TMPFILE)
+
+		option(WITH_NETWORK_EVENTFD "Use eventfd() in the network backend" ON)
+
+		if (WITH_NETWORK_EVENTFD)
+			add_definitions(-DWITH_NETWORK_EVENTFD=1)
+		endif(WITH_NETWORK_EVENTFD)
+
+		if (WITH_NETWORK_GET_BUFFER OR HAS_PIPE2)
+			add_definitions(-D_GNU_SOURCE=1)
+		endif(WITH_NETWORK_GET_BUFFER OR HAS_PIPE2)
 	endif()
 
 	add_definitions(-DNETWORK_BACKEND=1)
