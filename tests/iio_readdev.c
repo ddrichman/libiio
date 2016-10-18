@@ -141,13 +141,14 @@ static void * sig_handler_thd(void *data)
 {
 	sigset_t *mask = data;
 	int ret;
+	int sig;
 
 	/* Blocks until one of the termination signals is received */
 	do {
-		ret = sigwaitinfo(mask, NULL);
-	} while (ret == -1 && errno == EINTR);
+		ret = sigwait(mask, &sig);
+	} while (ret != 0);
 
-	quit_all(ret);
+	quit_all(sig);
 
 	return NULL;
 }
